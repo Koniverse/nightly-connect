@@ -171,6 +171,15 @@ export class NightlyConnectAdapter implements Injected {
 
     const [app, metadataWallets] = await NightlyConnectAdapter.initApp(appInitData)
 
+    // Todo: Remove this after update metadata for SubWallet
+    metadataWallets.forEach((walletMetadata) => {
+      if (walletMetadata.slug === 'subwallet-js') {
+        walletMetadata.walletType = 'hybrid';
+        // SubWallet also has a native link `subwallet://` but the universal link delivers better UX in case the mobile app is not installed
+        walletMetadata.mobile = { native: null , universal: 'https://mobile.subwallet.app' };
+      }
+    })
+
     adapter._app = app
     adapter._metadataWallets = metadataWallets
 
@@ -369,6 +378,15 @@ export class NightlyConnectAdapter implements Injected {
       })
 
       this._chosenMobileWalletName = walletName
+
+      // Connect with SubWallet Mobile App via universal link
+      if(typeof window !== 'undefined' && wallet.slug === 'subwallet-js'){
+        const url = `${wallet.deeplink.universal}/browser?url=${encodeURIComponent(window.location.toString())}`;
+
+        window.open(url, '_blank', 'noreferrer noopener');
+
+        return;
+      }
 
       triggerConnect(
         wallet.deeplink.universal,
